@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce App V1 - Imperative JS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for aesthetic appeal */
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8 font-sans">
+
+    <!-- Header -->
+    <header class="bg-white rounded-xl shadow-lg p-6 mb-8 max-w-4xl mx-auto">
+        <h1 class="text-3xl font-extrabold text-blue-700">Simple E-commerce Store V1</h1>
+        <p class="text-gray-600 mt-1">Built with vanilla JavaScript and basic HTML structure.</p>
+    </header>
+
+    <main class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Product List Panel -->
+        <section id="product-list" class="md:col-span-2 bg-white p-6 rounded-xl card transition-shadow">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800 border-b pb-2">Products</h2>
+            <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Products will be injected here -->
+            </div>
+        </section>
+
+        <!-- Shopping Cart Panel -->
+        <aside id="shopping-cart" class="md:col-span-1 bg-white p-6 rounded-xl card sticky top-4">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800 border-b pb-2">Your Cart</h2>
+            <div id="cart-items" class="space-y-3">
+                <p class="text-gray-500 italic" id="empty-cart-message">Cart is empty.</p>
+            </div>
+
+            <div id="cart-summary" class="mt-6 pt-4 border-t border-gray-200">
+                <div class="flex justify-between font-bold text-lg">
+                    <span>Total:</span>
+                    <span id="cart-total">$0.00</span>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script>
+        // --- DATA ---
+        const PRODUCTS = [
+            { id: 1, name: "Vintage T-Shirt", price: 29.99, image: "https://placehold.co/400x300/4F46E5/ffffff?text=Shirt" },
+            { id: 2, name: "Leather Wallet", price: 45.00, image: "https://placehold.co/400x300/10B981/ffffff?text=Wallet" },
+            { id: 3, name: "Espresso Maker", price: 199.95, image: "https://placehold.co/400x300/F59E0B/ffffff?text=Coffee" },
+            { id: 4, name: "Noise-Cancelling Headphones", price: 125.50, image: "https://placehold.co/400x300/EF4444/ffffff?text=Headphones" },
+        ];
+
+        let cart = [];
+
+        // --- DOM Elements ---
+        const productsContainer = document.getElementById('products-container');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartTotalDisplay = document.getElementById('cart-total');
+        const emptyCartMessage = document.getElementById('empty-cart-message');
+
+        // --- FUNCTIONS ---
+
+        // Renders the list of products on the page
+        function renderProducts() {
+            productsContainer.innerHTML = ''; // Clear existing content
+            PRODUCTS.forEach(product => {
+                const productEl = document.createElement('div');
+                productEl.className = 'bg-white p-4 rounded-lg border border-gray-100 shadow-md flex flex-col justify-between';
+                productEl.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}" class="rounded-t-lg mb-3 h-32 object-cover w-full">
+                    <h3 class="text-lg font-bold text-gray-900">${product.name}</h3>
+                    <p class="text-blue-600 font-semibold my-1">$${product.price.toFixed(2)}</p>
+                    <button data-id="${product.id}" class="add-to-cart-btn mt-3 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-150">
+                        Add to Cart
+                    </button>
+                `;
+                productsContainer.appendChild(productEl);
+            });
+
+            // Attach event listeners after rendering
+            document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const productId = parseInt(event.target.dataset.id);
+                    addToCart(productId);
+                });
+            });
+        }
+
+        // Adds a product to the cart
+        function addToCart(productId) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingItem = cart.find(item => item.id === productId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            renderCart();
+        }
+
+        // Renders the shopping cart content and updates the total
+        function renderCart() {
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+
+            if (cart.length === 0) {
+                emptyCartMessage.classList.remove('hidden');
+                cartTotalDisplay.textContent = '$0.00';
+                return;
+            }
+
+            emptyCartMessage.classList.add('hidden');
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex justify-between items-center text-sm p-2 border-b border-gray-100';
+                itemEl.innerHTML = `
+                    <div class="flex-1">
+                        <span class="font-medium">${item.name}</span>
+                        <span class="text-gray-500 ml-2">($${item.price.toFixed(2)} x ${item.quantity})</span>
+                    </div>
+                    <button data-id="${item.id}" class="remove-from-cart-btn text-red-500 hover:text-red-700 ml-4 font-bold">
+                        &times;
+                    </button>
+                `;
+                cartItemsContainer.appendChild(itemEl);
+            });
+
+            cartTotalDisplay.textContent = `$${total.toFixed(2)}`;
+
+            // Attach remove listeners
+            document.querySelectorAll('.remove-from-cart-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const productId = parseInt(event.target.dataset.id);
+                    removeFromCart(productId);
+                });
+            });
+        }
+
+        // Removes one unit of a product from the cart
+        function removeFromCart(productId) {
+            const itemIndex = cart.findIndex(item => item.id === productId);
+
+            if (itemIndex > -1) {
+                if (cart[itemIndex].quantity > 1) {
+                    cart[itemIndex].quantity -= 1;
+                } else {
+                    cart.splice(itemIndex, 1); // Remove item completely
+                }
+            }
+            renderCart();
+        }
+
+
+        // --- INITIALIZATION ---
+        // Run on page load to set up the UI
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            renderCart();
+        });
+    </script>
+</body>
+</html>
