@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Comm V2 React Application</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load React and ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Load Babel Standalone for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Load Firebase JS SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+        #root { min-height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- 
+        1. Set up mandatory global variables for the Canvas environment and local testing.
+    -->
+    <script>
+        // --- Environment Variables Setup ---
+        window.__app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-ecomm-app-id';
+        window.__initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // PLACEHOLDER: Firebase Config (Replace with your own for local testing)
+        window.__firebase_config = typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify({
+            apiKey: "YOUR_API_KEY",
+            projectId: "YOUR_PROJECT_ID",
+            // ... rest of your config
+        });
+
+        // --- Forbidden Function Mocks ---
+        window.confirm = (message) => { console.warn("MOCK CONFIRM:", message); return true; };
+        window.alert = (message) => { console.error("MOCK ALERT:", message); };
+    </script>
+
+    <!-- 
+        Load your external index.jsx file.
+        The type MUST be "text/babel" for Babel to process the JSX/React syntax.
+    -->
+    <script type="text/babel" src="./index.jsx"></script>
+</body>
+</html>
