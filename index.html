@@ -3,57 +3,479 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Comm V2 React Application</title>
+    <title>E-Commerce Shopping Cart</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load React and ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- Load Babel Standalone for JSX compilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Load Firebase JS SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
-
+    <!-- Configure Tailwind to use the 'Inter' font -->
     <style>
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-        #root { min-height: 100vh; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb; /* Light background */
+        }
+        /* Custom scrollbar style for the product list */
+        .scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="min-h-screen p-4 md:p-8">
 
-    <!-- 
-        1. Set up mandatory global variables for the Canvas environment and local testing.
-    -->
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 p-4 bg-white shadow-lg rounded-xl">
+            <h1 class="text-3xl font-extrabold text-indigo-700">The Gemini Store</h1>
+            <p class="text-gray-500 mt-1">Shop smart, live easy.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Products Section (2/3 width on large screens) -->
+            <section class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800">Available Products</h2>
+                <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 scroll-container max-h-[70vh] overflow-y-auto pr-2">
+                    <!-- Product Cards will be rendered here by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Shopping Cart Section (1/3 width on large screens) -->
+            <aside class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg h-fit sticky top-8">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Shopping Cart (<span id="cart-item-count">0</span>)
+                </h2>
+
+                <!-- Cart Items List: Empty message is now a sibling, not a child of the container -->
+                <p id="empty-cart-message" class="text-gray-500 text-center py-8 transition-opacity duration-300">Your cart is empty. Start adding some products!</p>
+
+                <div id="cart-items-container" class="space-y-4 mb-6 border-b pb-4 min-h-[100px]">
+                    <!-- Cart items rendered here -->
+                </div>
+
+                <!-- Cart Totals -->
+                <div id="cart-totals">
+                    <div class="flex justify-between text-gray-600 mb-2">
+                        <span>Subtotal:</span>
+                        <span id="subtotal" class="font-medium">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-gray-600 mb-2">
+                        <span>Tax (10%):</span>
+                        <span id="tax-amount" class="font-medium">$0.00</span>
+                    </div>
+                    <div class="flex justify-between border-t pt-3 mt-3 text-xl font-bold text-indigo-700">
+                        <span>Grand Total:</span>
+                        <span id="grand-total">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- Checkout Button -->
+                <button onclick="checkout()" class="w-full mt-6 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" id="checkout-button">
+                    Proceed to Checkout
+                </button>
+
+                <!-- LLM Feature: Pitch Generator -->
+                <div class="mt-4 pt-4 border-t border-indigo-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Shopping Assistant</h3>
+                    <button onclick="generateCartPitch()" id="pitch-button"
+                            class="w-full py-3 bg-fuchsia-600 text-white font-bold rounded-lg shadow-lg hover:bg-fuchsia-700 transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="mr-2">✨</span> Generate Cart Pitch
+                    </button>
+                    <div id="pitch-loading" class="text-center text-sm text-fuchsia-600 mt-2 hidden">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-fuchsia-600 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Crafting your custom pitch...
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Custom Modal/Message Box -->
+    <div id="message-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+            <h3 id="modal-title" class="text-xl font-bold mb-3 text-gray-800">Message</h3>
+            <p id="modal-body" class="text-gray-600 mb-6 whitespace-pre-line"></p>
+            <div class="flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
-        // --- Environment Variables Setup ---
-        window.__app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-ecomm-app-id';
-        window.__initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // --- GEMINI API SETUP ---
+        const apiKey = ""; 
+        const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
 
-        // PLACEHOLDER: Firebase Config (Replace with your own for local testing)
-        window.__firebase_config = typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify({
-            apiKey: "AIzaSyAd60dmqFlh5-Xi3wTLgdK5thbVoE-CmHs",
-            authDomain: "e-commerce-hooks-store.firebaseapp.com",
-            projectId: "e-commerce-hooks-store",
-            storageBucket: "e-commerce-hooks-store.firebasestorage.app",
-            messagingSenderId: "616480369514",
-            appId: "1:616480369514:web:570d10008717c88cd35313",
-            measurementId: "G-8KFJEGDLPV"
+        // Helper for exponential backoff
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        // If response is not OK, throw error to trigger retry unless it's a 4xx error
+                        if (response.status >= 400 && response.status < 500) {
+                            throw new Error(`Client error: ${response.status}`);
+                        }
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    console.error(`Attempt ${i + 1} failed:`, error.message);
+                    if (i === retries - 1) throw error;
+
+                    // Exponential backoff
+                    const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        // --- DATA SETUP ---
+        const PRODUCTS = [
+            { id: 1, name: "Smart Watch Elite", price: 299.99, imageUrl: "https://placehold.co/400x300/4c51bf/ffffff?text=Watch", description: "Seamless connectivity and advanced health tracking." },
+            { id: 2, name: "Noise Cancelling Headphones", price: 179.50, imageUrl: "https://placehold.co/400x300/3182ce/ffffff?text=Headphones", description: "Immersive audio experience with crystal clear sound." },
+            { id: 3, name: "Portable SSD 1TB", price: 125.00, imageUrl: "https://placehold.co/400x300/38a169/ffffff?text=SSD", description: "Ultra-fast data transfer and robust security." },
+            { id: 4, name: "Ergonomic Keyboard", price: 79.99, imageUrl: "https://placehold.co/400x300/dd6b20/ffffff?text=Keyboard", description: "Designed for comfort during long work sessions." },
+            { id: 5, name: "Wireless Charging Pad", price: 35.00, imageUrl: "https://placehold.co/400x300/a0aec0/ffffff?text=Charger", description: "Fast, safe, and convenient wireless charging." },
+            { id: 6, name: "4K Webcam Pro", price: 99.00, imageUrl: "https://placehold.co/400x300/d69e2e/ffffff?text=Webcam", description: "Professional-grade video quality for streaming and meetings." }
+        ];
+
+        let cart = []; // Stores objects: { id: number, quantity: number }
+        const TAX_RATE = 0.10; // 10% tax rate
+
+        // --- UTILITY FUNCTIONS ---
+
+        /**
+         * Formats a number to a currency string (e.g., 125.50 -> $125.50).
+         * @param {number} amount
+         * @returns {string}
+         */
+        const formatCurrency = (amount) => {
+            return `$${amount.toFixed(2)}`;
+        };
+
+        // --- MODAL/MESSAGE BOX FUNCTIONS (Replaces alert()) ---
+
+        const showModal = (title, body) => {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = body; // Changed to innerHTML to allow <br>
+            const modal = document.getElementById('message-modal');
+            const content = document.getElementById('modal-content');
+            
+            modal.classList.remove('hidden');
+            // Animate in
+            setTimeout(() => {
+                modal.style.opacity = '1';
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        };
+
+        const closeModal = () => {
+            const modal = document.getElementById('message-modal');
+            const content = document.getElementById('modal-content');
+
+            // Animate out
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            modal.style.opacity = '0';
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300); // Match animation duration
+        };
+
+
+        // --- CART LOGIC ---
+
+        /**
+         * Calculates and updates the cart totals in the UI.
+         */
+        const updateCartTotals = () => {
+            // 1. Calculate subtotal
+            let subtotal = 0;
+            cart.forEach(cartItem => {
+                const product = PRODUCTS.find(p => p.id === cartItem.id);
+                if (product) {
+                    subtotal += product.price * cartItem.quantity;
+                }
+            });
+
+            // 2. Calculate tax and grand total
+            const taxAmount = subtotal * TAX_RATE;
+            const grandTotal = subtotal + taxAmount;
+            
+            // 3. Update UI elements
+            if (document.getElementById('subtotal')) document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+            if (document.getElementById('tax-amount')) document.getElementById('tax-amount').textContent = formatCurrency(taxAmount);
+            if (document.getElementById('grand-total')) document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
+            if (document.getElementById('cart-item-count')) document.getElementById('cart-item-count').textContent = cart.reduce((total, item) => total + item.quantity, 0);
+
+            // 4. Update checkout button state
+            const checkoutButton = document.getElementById('checkout-button');
+            const pitchButton = document.getElementById('pitch-button');
+            
+            if (checkoutButton) {
+                checkoutButton.disabled = cart.length === 0;
+                checkoutButton.textContent = cart.length === 0 ? "Cart Empty" : "Proceed to Checkout";
+            }
+            if (pitchButton) {
+                pitchButton.disabled = cart.length === 0;
+            }
+        };
+
+        /**
+         * Renders the product cards in the products section.
+         */
+        const renderProducts = () => {
+            const container = document.getElementById('product-list');
+            if (!container) {
+                console.error("Error: Product list container not found.");
+                return;
+            }
+            container.innerHTML = PRODUCTS.map(product => `
+                <div class="bg-gray-50 border border-gray-100 p-4 rounded-xl shadow-md flex flex-col transition duration-300 hover:shadow-lg">
+                    <img src="${product.imageUrl}" alt="${product.name}" 
+                         class="w-full h-32 object-cover rounded-lg mb-4 border border-gray-200"
+                         onerror="this.onerror=null; this.src='https://placehold.co/400x300/e5e7eb/333333?text=Product+Image';"
+                    >
+                    <h3 class="text-lg font-bold text-gray-800">${product.name}</h3>
+                    <p class="text-sm text-gray-500 mb-3 line-clamp-2">${product.description}</p>
+                    <div class="mt-auto flex justify-between items-center pt-2">
+                        <span class="text-xl font-extrabold text-green-600">${formatCurrency(product.price)}</span>
+                        <button onclick="addToCart(${product.id})"
+                                class="flex items-center px-4 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition duration-200 shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Add
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        /**
+         * Renders the current state of the cart in the sidebar.
+         */
+        const renderCart = () => {
+            const container = document.getElementById('cart-items-container');
+            const emptyMessage = document.getElementById('empty-cart-message');
+            
+            // Critical check to prevent the reported TypeError / Console Error
+            if (!container || !emptyMessage) {
+                console.error("Error: Cart container or empty message element not found. Check DOM IDs.");
+                return;
+            }
+
+            if (cart.length === 0) {
+                container.innerHTML = '';
+                // Show empty message
+                emptyMessage.style.display = 'block'; 
+                emptyMessage.classList.remove('opacity-0');
+            } else {
+                // Hide empty message
+                emptyMessage.classList.add('opacity-0');
+                // Use a short delay before setting display:none, to allow opacity transition
+                setTimeout(() => { emptyMessage.style.display = 'none'; }, 200);
+
+                // Render cart items
+                container.innerHTML = cart.map(cartItem => {
+                    const product = PRODUCTS.find(p => p.id === cartItem.id);
+                    if (!product) return ''; // Should not happen
+
+                    const itemTotal = product.price * cartItem.quantity;
+
+                    return `
+                        <div class="flex justify-between items-center p-3 border-b last:border-b-0 transition duration-150 hover:bg-gray-50 rounded-lg">
+                            <!-- Item Details -->
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-gray-800 truncate">${product.name}</p>
+                                <p class="text-sm text-gray-500">${formatCurrency(product.price)} each</p>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="flex items-center space-x-2 ml-4">
+                                <button onclick="updateQuantity(${product.id}, -1)" 
+                                    class="text-gray-500 hover:text-red-500 transition duration-150 p-1 rounded-full bg-gray-100 hover:bg-red-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
+                                </button>
+                                
+                                <span class="font-bold text-gray-700 w-5 text-center">${cartItem.quantity}</span>
+                                
+                                <button onclick="updateQuantity(${product.id}, 1)" 
+                                    class="text-gray-500 hover:text-green-500 transition duration-150 p-1 rounded-full bg-gray-100 hover:bg-green-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Total & Remove Button -->
+                            <div class="ml-4 text-right">
+                                <p class="font-bold text-gray-800">${formatCurrency(itemTotal)}</p>
+                                <button onclick="removeFromCart(${product.id})" class="text-xs text-red-500 hover:text-red-700 mt-1">Remove</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            updateCartTotals();
+        };
+
+        /**
+         * Adds a product to the cart or increases its quantity.
+         * @param {number} productId 
+         */
+        const addToCart = (productId) => {
+            const existingItemIndex = cart.findIndex(item => item.id === productId);
+
+            if (existingItemIndex > -1) {
+                // Item exists, increase quantity
+                cart[existingItemIndex].quantity += 1;
+            } else {
+                // Item is new, add to cart
+                cart.push({ id: productId, quantity: 1 });
+            }
+
+            renderCart();
+            const product = PRODUCTS.find(p => p.id === productId);
+            showModal("Item Added", `${product.name} has been added to your cart.`);
+        };
+
+        /**
+         * Updates the quantity of an item in the cart.
+         * @param {number} productId 
+         * @param {number} delta - either 1 (increase) or -1 (decrease)
+         */
+        const updateQuantity = (productId, delta) => {
+            const existingItemIndex = cart.findIndex(item => item.id === productId);
+
+            if (existingItemIndex > -1) {
+                const newQuantity = cart[existingItemIndex].quantity + delta;
+
+                if (newQuantity <= 0) {
+                    // If quantity drops to zero or less, remove the item
+                    removeFromCart(productId);
+                } else {
+                    // Update quantity
+                    cart[existingItemIndex].quantity = newQuantity;
+                }
+            }
+            renderCart();
+        };
+
+        /**
+         * Removes a product entirely from the cart.
+         * @param {number} productId 
+         */
+        const removeFromCart = (productId) => {
+            const product = PRODUCTS.find(p => p.id === productId);
+            cart = cart.filter(item => item.id !== productId);
+            renderCart();
+            showModal("Item Removed", `${product.name} has been removed from your cart.`);
+        };
+        
+        /**
+         * Simulates the checkout process.
+         */
+        const checkout = () => {
+            if (cart.length === 0) {
+                showModal("Checkout Failed", "Your cart is empty. Please add items before checking out.");
+                return;
+            }
+
+            const finalTotal = document.getElementById('grand-total').textContent;
+            
+            showModal("Order Confirmed!", 
+                `Your order for ${finalTotal} has been placed. Thank you for shopping with The Gemini Store!`);
+            
+            // Clear the cart after successful checkout
+            cart = [];
+            renderCart();
+        };
+        
+        // --- GEMINI FEATURE IMPLEMENTATION ---
+
+        /**
+         * Generates a compelling marketing pitch for the items currently in the cart using the Gemini API.
+         */
+        const generateCartPitch = async () => {
+            if (cart.length === 0) {
+                showModal("Pitch Generator", "Your cart is empty. Please add products to generate a pitch.");
+                return;
+            }
+
+            const pitchButton = document.getElementById('pitch-button');
+            const pitchLoading = document.getElementById('pitch-loading');
+            
+            if (!pitchButton || !pitchLoading) return; // Safeguard
+
+            // 1. Gather product names and quantities
+            const productList = cart.map(item => {
+                const product = PRODUCTS.find(p => p.id === item.id);
+                return `${item.quantity} x ${product ? product.name : 'Unknown Product'}`;
+            }).join(', ');
+
+            const userQuery = `Write a short, exciting marketing pitch (3-4 sentences max) for a customer who is purchasing the following items: ${productList}. Focus on how these products enhance their modern, connected lifestyle.`;
+            
+            // 2. Set UI to loading state
+            pitchButton.disabled = true;
+            pitchButton.innerHTML = `<span class="mr-2">✨</span> Generating...`;
+            pitchLoading.classList.remove('hidden');
+
+            try {
+                // 3. Construct API payload
+                const systemPrompt = "You are a creative marketing copywriter for a high-end tech e-commerce store. Your tone should be energetic, concise, and focused on modern, seamless connectivity. Only output the pitch text.";
+                
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }], // Use search grounding for better product context
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                // 4. Call API with retry logic
+                const response = await fetchWithRetry(GEMINI_API_URL + `?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a pitch right now. Please try again.";
+
+                // 5. Display result in modal
+                // Replace newlines with <br> for proper modal rendering
+                const modalBodyText = generatedText.replace(/\n/g, '<br>'); 
+                showModal("✨ Your Custom Cart Pitch!", modalBodyText);
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                showModal("Error Generating Pitch", "The AI assistant encountered an error. Please check the console for details.");
+            } finally {
+                // 6. Reset UI state
+                pitchButton.disabled = cart.length === 0;
+                pitchButton.innerHTML = `<span class="mr-2">✨</span> Generate Cart Pitch`;
+                pitchLoading.classList.add('hidden');
+            }
+        };
+
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            renderCart(); // Initial rendering of empty cart and totals
         });
 
-        <!-- 
-            Forbidden Function Mocks
-        -->
-        window.confirm = (message) => { console.warn("MOCK CONFIRM:", message); return true; };
-        window.alert = (message) => { console.error("MOCK ALERT:", message); };
     </script>
 
-    <!-- 
-        Load your external index.jsx file.
-        The type MUST be "text/babel" for Babel to process the JSX/React syntax.
-    -->
-    <script type="text/babel" src="./index.jsx"></script>
 </body>
 </html>
