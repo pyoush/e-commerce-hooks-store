@@ -34,12 +34,18 @@
 
         // PLACEHOLDER: Firebase Config (Replace with your own for local testing)
         window.__firebase_config = typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify({
-            apiKey: "YOUR_API_KEY",
-            projectId: "YOUR_PROJECT_ID",
-            // ... rest of your config
+            apiKey: "AIzaSyAd60dmqFlh5-Xi3wTLgdK5thbVoE-CmHs",
+            authDomain: "e-commerce-hooks-store.firebaseapp.com",
+            projectId: "e-commerce-hooks-store",
+            storageBucket: "e-commerce-hooks-store.firebasestorage.app",
+            messagingSenderId: "616480369514",
+            appId: "1:616480369514:web:570d10008717c88cd35313",
+            measurementId: "G-8KFJEGDLPV"
         });
 
-        // --- Forbidden Function Mocks ---
+        <!-- 
+            Forbidden Function Mocks
+        -->
         window.confirm = (message) => { console.warn("MOCK CONFIRM:", message); return true; };
         window.alert = (message) => { console.error("MOCK ALERT:", message); };
     </script>
