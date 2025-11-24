@@ -1,0 +1,11 @@
+#Dependencies
+/node_modules
+.env
+
+#Build artifacts
+/dist
+/build
+
+#Logs and OS files
+*.log
+.DS_Store
